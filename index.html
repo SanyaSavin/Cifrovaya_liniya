@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Интерактивная лента важных событий российской истории">
+    <meta name="keywords" content="российская история, временная шкала, события России">
+    <title>Лента важных событий российской истории</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Times New Roman', Times, serif;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        /* Фон */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://avatars.mds.yandex.net/get-shedevrum/14004266/img_c925552b6b0d11efb0e616127272c91d/orig');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            z-index: -2;
+        }
+        /* Размытие и затемнение */
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(248, 251, 255, 0.7);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: -1;
+        }
+        #main-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+        .timeline-wrapper {
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: 100vh;
+            white-space: nowrap;
+            scrollbar-width: none;
+        }
+        .timeline-wrapper::-webkit-scrollbar {
+            display: none;
+        }
+        .timeline {
+            position: relative;
+            width: 6900px;
+            height: 100vh;
+            margin: 0 auto;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: linear-gradient(to right, #a8dadc, #457b9d, #1d3557);
+            transform: translateY(-50%);
+            z-index: 1;
+            border-radius: 5px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .event-block {
+            position: absolute;
+            width: 360px;
+            max-width: 90vw;
+            text-align: center;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 1.5s ease, transform 1.5s ease;
+            z-index: 2;
+            font-family: 'Times New Roman', Times, serif;
+            cursor: default;
+        }
+        .event-block.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) !important;
+        }
+        .event-block.above {
+            bottom: 52%;
+            padding-bottom: 4vh;
+            transform: translateX(-50%) translateY(-4vh);
+        }
+        .event-block.below {
+            top: 52%;
+            padding-top: 4vh;
+            transform: translateX(-50%) translateY(4vh);
+        }
+        .event-photo {
+            width: 160px;
+            max-width: 40vw;
+            height: 160px;
+            max-height: 40vw;
+            background-size: cover;
+            background-position: center;
+            margin: 0 auto 15px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            cursor: pointer;
+            transition: transform 0.6s ease, box-shadow 0.6s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+        }
+        .event-photo:hover {
+            transform: scale(1.2);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+        .event-year {
+            font-size: clamp(22px, 3.5vw, 26px);
+            font-weight: bold;
+            color: red;
+            margin: 10px 0;
+        }
+        .event-title {
+            font-size: clamp(16px, 3vw, 20px);
+            font-weight: 600;
+            color: blue;
+            margin: 0 auto 10px;
+            width: 300px;
+            max-width: 90vw;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
+        .event-desc {
+            font-size: clamp(12px, 2vw, 14px);
+            color: #444;
+            line-height: 1.6;
+            width: 300px;
+            max-width: 90vw;
+            margin: 0 auto;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            hyphens: auto;
+        }
+        .marker {
+            position: absolute;
+            top: 50%;
+            width: clamp(60px, 10vw, 80px);
+            height: clamp(60px, 10vw, 80px);
+            background: #f1faee;
+            border: clamp(8px, 1.5vw, 10px) solid #457b9d;
+            border-radius: 50%;
+            z-index: 3;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(16px, 3vw, 20px);
+            font-weight: bold;
+            color: #1d3557;
+            text-align: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .marker.long {
+            font-size: clamp(12px, 2.5vw, 16px);
+        }
+        .pos-1 { left: 400px; }
+        .pos-2 { left: 1000px; }
+        .pos-3 { left: 1600px; }
+        .pos-4 { left: 2200px; }
+        .pos-5 { left: 2800px; }
+        .pos-6 { left: 3400px; }
+        .pos-7 { left: 4000px; }
+        .pos-8 { left: 4600px; }
+        .pos-9 { left: 5200px; }
+        #detailContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 100;
+            pointer-events: auto;
+            background: white;
+        }
+        #detailObject {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        #backButton {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 40px;
+            background: #457b9d;
+            color: white;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        #backButton:hover {
+            background: #1d3557;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div class="timeline-wrapper" id="timelineWrapper">
+            <div class="timeline">
+                <!-- События (без изменений) -->
+                <div class="event-block above pos-1">
+                    <div class="event-photo" style="background-image: url('https://cdnstatic.rg.ru/crop1000x667/uploads/images/2024/12/19/m-zanegin-otkrytka-s-novym-godom-1983-g-murmanskiy-oblastnoy-kraevedcheskiy-muzey_00f.jpg');" onclick="showDetail('detail1.pdf')"></div>
+                    <div class="event-year">1700 год</div>
+                    <div class="event-title">Указ Петра I</div>
+                    <div class="event-desc">С 1700 года по указу Петра I Новый год в России стали отмечать 1 января.</div>
+                </div>
+                <div class="event-block below pos-2">
+                    <div class="event-photo" style="background-image: url('https://www.vmeda.org/wp-content/uploads/2018/01/6FD7129E-9CD5-42D1-B63A-5DC877257FFC.jpeg');" onclick="showDetail('detail2.pdf')"></div>
+                    <div class="event-year">1755 год</div>
+                    <div class="event-title">Указ Елизаветы Петровны</div>
+                    <div class="event-desc">Московский университет был официально основан 12 января (23 января по новому стилю) 1755 года указом императрицы Елизаветы Петровны.</div>
+                </div>
+                <div class="event-block above pos-3">
+                    <div class="event-photo" style="background-image: url('https://morvesti.ru/upload/iblock/a28/mf-02-19-0009.jpg');" onclick="showDetail('detail3.pdf')"></div>
+                    <div class="event-year">28 января 1820 года</div>
+                    <div class="event-title">Открытие Антарктиды</div>
+                    <div class="event-desc">Русскими моряками Фаддеем Беллинсгаузеном и Михаилом Лазаревым на шлюпах «Восток» и «Мирный» открыта Антарктида.</div>
+                </div>
+                <div class="event-block below pos-4">
+                    <div class="event-photo" style="background-image: url('https://www.hellopiter.ru/image/768696788769678788887.jpg');" onclick="showDetail('detail4.pdf')"></div>
+                    <div class="event-year">17 февраля 1852 года</div>
+                    <div class="event-title">Состоялось торжественное открытие Нового Эрмитажа</div>
+                    <div class="event-desc">Одного из пяти связанных друг с другом зданий на Дворцовой набережной Санкт-Петербурга, построенных по проекту баварского архитектора Лео фон Кленце.</div>
+                </div>
+                <div class="event-block above pos-5">
+                    <div class="event-photo" style="background-image: url('https://vladlib.ru/wp-content/uploads/2022/02/80f4af6d971886c3ccc3ea711ac7fb80d2af22af.jpg');" onclick="showDetail('detail5.pdf')"></div>
+                    <div class="event-year">1904 год</div>
+                    <div class="event-title">Подвиг крейсера «Варяг»</div>
+                    <div class="event-desc">Вошёл в историю русского флота и стал одной из героических страниц русско-японской войны 1904–1905 годов.</div>
+                </div>
+                <div class="event-block below pos-6">
+                    <div class="event-photo" style="background-image: url('https://aif-s3.aif.ru/images/027/839/3e0f1f7f2056c60f38322c3adf232133.jpg');" onclick="showDetail('detail6.pdf')"></div>
+                    <div class="event-year">2 февраля 1943 года</div>
+                    <div class="event-title">Дата завершения Сталинградской битвы</div>
+                    <div class="event-desc">Одного из крупнейших сражений Великой Отечественной войны. В этот день капитулировала северная группировка немецко-фашистских войск в ходе операции «Кольцо».</div>
+                </div>
+                <div class="event-block above pos-7">
+                    <div class="event-photo" style="background-image: url('https://s16.stc.yc.kpcdn.net/share/i/12/10052281/wr-960.webp');" onclick="showDetail('detail7.pdf')"></div>
+                    <div class="event-year">27 января 1944 года</div>
+                    <div class="event-title">Дата полного освобождения Ленинграда от фашистской блокады</div>
+                    <div class="event-desc">(Ныне Санкт-Петербург) в результате Ленинградско-Новгородской стратегической наступательной операции Ленинградского и Волховского фронтов.</div>
+                </div>
+                <div class="event-block below pos-8">
+                    <div class="event-photo" style="background-image: url('https://resizer.mail.ru/p/1c79a6a7-64fa-5ed0-b80c-74971ac588ad/AQA4VzVPQ3Z9rEzwuGO-qHarylzFDvY-gWcPlqnA4jrUZ8qCjpiwsJ0WXxU3EOG94WEZL7Ghz9I4qxXSi0daDCXzQgc.jpg');" onclick="showDetail('detail8.pdf')"></div>
+                    <div class="event-year">с 20 февраля 1986 года по 23 марта 2001 года</div>
+                    <div class="event-title">Первая многомодульная орбитальная станция в истории</div>
+                    <div class="event-desc">«Мир» — советская и российская пилотируемая научно-исследовательская орбитальная станция.</div>
+                </div>
+                <div class="event-block above pos-9">
+                    <div class="event-photo" style="background-image: url('https://img.championat.com/i/news/54/40/1391805440_b_saljut-na-ceremonii-otkrytija-olimpiady-v-sochi-vid-snaruzhi-stadiona-fisht.jpg');" onclick="showDetail('detail9.pdf')"></div>
+                    <div class="event-year">2014 год</div>
+                    <div class="event-title">XXII зимные Олимпийские игры</div>
+                    <div class="event-desc">Проходили в российском городе Сочи.</div>
+                </div>
+                <!-- Маркеры годов -->
+                <div class="marker pos-1">1700</div>
+                <div class="marker pos-2">1755</div>
+                <div class="marker pos-3">1820</div>
+                <div class="marker pos-4">1852</div>
+                <div class="marker pos-5">1904</div>
+                <div class="marker pos-6">1943</div>
+                <div class="marker pos-7">1944</div>
+                <div class="marker pos-8 long">1986–<br>2001</div>
+                <div class="marker pos-9">2014</div>
+            </div>
+        </div>
+        <!-- Контейнер для просмотра PDF -->
+<div id="detailContainer">
+    <iframe id="detailIframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+</div>
+    </div>
+    <button id="backButton" onclick="hideDetail()">Назад к ленте</button>
+
+    <script>
+    const wrapper = document.getElementById('timelineWrapper');
+    const events = document.querySelectorAll('.event-block');
+
+    wrapper.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        wrapper.scrollLeft += e.deltaY * 2;
+    }, { passive: false });
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { root: wrapper, threshold: 0.1 });
+
+    events.forEach(event => observer.observe(event));
+
+    function showDetail(page) {
+        const container = document.getElementById('detailContainer');
+        const iframe = document.getElementById('detailIframe');
+        const backBtn = document.getElementById('backButton');
+
+        // Уникальный параметр для полного обхода кэша + параметры просмотра
+        const timestamp = new Date().getTime();
+        const fullUrl = page + '?v=' + timestamp + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH';
+
+        iframe.src = fullUrl;
+
+        container.style.display = 'block';
+        backBtn.style.display = 'block';
+        wrapper.style.pointerEvents = 'none';
+    }
+
+    function hideDetail() {
+        const container = document.getElementById('detailContainer');
+        const iframe = document.getElementById('detailIframe');
+        const backBtn = document.getElementById('backButton');
+
+        // Полная очистка src для надёжного сброса
+        iframe.src = 'about:blank';
+
+        container.style.display = 'none';
+        backBtn.style.display = 'none';
+        wrapper.style.pointerEvents = 'auto';
+    }
+
+    window.addEventListener('load', () => {
+        console.log('Лента времени загружена!');
+    });
+</script>
+</body>
+</html>
